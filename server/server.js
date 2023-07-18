@@ -8,6 +8,10 @@ import Problem_Schema from './DB/models/problems_schema.js';
 import generateFile from './generateFile.js';
 import executeCpp from './executeCPP.js';
 import fs from 'fs';
+import dotenv from 'dotenv';
+dotenv.config();
+
+
 connectDB();
 User.createCollection()
   .then(() => console.log('User collection created'))

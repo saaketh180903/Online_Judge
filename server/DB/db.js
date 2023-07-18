@@ -1,10 +1,12 @@
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const connectDB = async () => {
     try {
       // Connection URL from MongoDB Atlas
-      const dbUrl = 'mongodb+srv://saakethkoduri:QxXpQbfX1jaM0cNM@cluster0.bvuv1ir.mongodb.net/?retryWrites=true&w=majority';
-  
+      const dbUrl = process.env.DATABASE_URL;
+
       // Connect to MongoDB Atlas
       await mongoose.connect(dbUrl, {
         useNewUrlParser: true,
