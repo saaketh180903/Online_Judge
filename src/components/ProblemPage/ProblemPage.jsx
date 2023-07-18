@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button, Card, Modal } from 'react-bootstrap';
 import AceEditor from 'react-ace';
 import 'ace-builds/src-noconflict/mode-c_cpp';
 import 'ace-builds/src-noconflict/theme-monokai';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ProblemPage = () => {
   const { pid } = useParams();
+  const navigate = useNavigate();
   const [problem, setProblem] = useState(null);
   const [submission, setSubmission] = useState(null);
   const [language, setLanguage] = useState('cpp'); // Default language is 'cpp'
@@ -62,12 +65,51 @@ const ProblemPage = () => {
     setShowModal(false);
   };
 
+  const handleAllSubmissions = () => {
+    navigate(`/submissions?problemTitle=${encodeURIComponent(problem.title)}`);
+  };
+
+  const handleMySubmissions = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        'http://localhost:3001/mys',
+        {},
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
+      console.log('t1');
+      console.log(response.data);
+      const userEmail = response.data;
+      if (userEmail == null) {
+        toast.error('Please log in to view your submissions.'); // Display error notification
+      } else {
+        navigate(
+          `/submissions?problemTitle=${encodeURIComponent(
+            problem.title
+          )}&userEmail=${encodeURIComponent(userEmail)}`
+        );
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 403) {
+        toast.error('Please log in to view your submissions.'); // Display error notification
+      } else {
+        console.error('Error retrieving user email:', error);
+      }
+    }
+  };
+
   return (
     <div>
       {problem ? (
         <Card>
           <Card.Header>
             <h1>{problem.title}</h1>
+            <Button variant="secondary" onClick={handleAllSubmissions}>All Submissions</Button>
+            <Button variant="secondary" onClick={handleMySubmissions}>My Submissions</Button>
           </Card.Header>
           <Card.Body>
             <Card.Text>{problem.description}</Card.Text>
@@ -162,6 +204,8 @@ const ProblemPage = () => {
           </Modal>
         </div>
       )}
+
+      <ToastContainer /> {/* Notification container */}
     </div>
   );
 };

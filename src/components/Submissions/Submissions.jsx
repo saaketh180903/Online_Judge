@@ -1,10 +1,13 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Button, Table, Modal } from 'react-bootstrap';
 import axios from 'axios';
+import { useLocation } from 'react-router-dom';
 
 const Submissions = () => {
-  const [searchUser, setSearchUser] = useState('');
-  const [searchProblemTitles, setSearchProblemTitles] = useState('');
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const [searchUser, setSearchUser] = useState(searchParams.get('userEmail') || '');
+  const [searchProblemTitles, setSearchProblemTitles] = useState(searchParams.get('problemTitle') || '');
   const [filteredSubmissions, setFilteredSubmissions] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
@@ -22,8 +25,8 @@ const Submissions = () => {
   };
 
   useEffect(() => {
-    fetchFilteredSubmissions(); // Fetch all submissions on component mount
-  },[]);
+    fetchFilteredSubmissions(); // Fetch filtered submissions on component mount and whenever search parameters change
+  }, [searchUser, searchProblemTitles]);
 
   const openModal = (submission) => {
     setSelectedSubmission(submission);
@@ -85,7 +88,7 @@ const Submissions = () => {
       </Table>
 
       {selectedSubmission && (
-        <Modal show={showModal} onHide={closeModal}>
+        <Modal show={showModal} onHide={closeModal} style={{ maxWidth: '2400px', margin: 'auto' }}>
           <Modal.Header closeButton>
             <Modal.Title>Code Link and Test Results</Modal.Title>
           </Modal.Header>
@@ -102,10 +105,18 @@ const Submissions = () => {
                 <li key={index}>
                   <strong>Test {index + 1}:</strong>
                   <ul>
-                    <li>Input: <pre>{test.input}</pre></li>
-                    <li>Generated Output: <pre>{test.generatedOutput}</pre></li>
-                    <li>Expected Output: <pre>{test.expectedOutput}</pre></li>
-                    <li>Result: <pre>{test.resultoftestcase}</pre></li>
+                    <li>
+                      Input: <pre>{test.input}</pre>
+                    </li>
+                    <li>
+                      Generated Output: <pre>{test.generatedOutput}</pre>
+                    </li>
+                    <li>
+                      Expected Output: <pre>{test.expectedOutput}</pre>
+                    </li>
+                    <li>
+                      Result: <pre>{test.resultoftestcase}</pre>
+                    </li>
                   </ul>
                 </li>
               ))}

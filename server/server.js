@@ -208,6 +208,18 @@ app.post("/Submissions", async (req, res) => {
   }
 });
 
+app.post("/mys", auth , async (req, res) => {
+  try {
+    console.log('t12');
+    console.log(req.USER_DETAILS.email);
+    console.log('t12');
+    res.json(req.USER_DETAILS.email);
+  } catch (error) {
+    console.error('Error retrieving user email:', error);
+    res.status(500).json({ error: 'An error occurred' });
+  }
+});
+
 app.post('/AddProblem', async (req, res) => {
   try {
     // Extract the problem data from the request body
