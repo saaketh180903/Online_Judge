@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Table } from 'react-bootstrap';
 import axios from 'axios';
+import './LandingPage.css'
 
 const LandingPage = () => {
   const [problems, setProblems] = useState([]);

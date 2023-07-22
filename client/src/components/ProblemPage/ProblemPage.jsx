@@ -4,18 +4,32 @@ import axios from 'axios';
 import { Button, Card, Modal } from 'react-bootstrap';
 import AceEditor from 'react-ace';
 import 'ace-builds/src-noconflict/mode-c_cpp';
+import 'ace-builds/src-noconflict/mode-java';
+import 'ace-builds/src-noconflict/mode-python';
 import 'ace-builds/src-noconflict/theme-monokai';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './ProblemPage.css';
 
 const ProblemPage = () => {
   const { pid } = useParams();
   const navigate = useNavigate();
   const [problem, setProblem] = useState(null);
   const [submission, setSubmission] = useState(null);
-  const [language, setLanguage] = useState('cpp'); // Default language is 'cpp'
-  const [code, setCode] = useState(`#include <bits/stdc++.h>\nusing namespace std;\nint main() {\n    cout << "Hello, World!";\n    return 0;\n}`);
-  const [showModal, setShowModal] = useState(false); // State to manage modal visibility
+  const [language, setLanguage] = useState('cpp');
+  const [code, setCode] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [customInput, setCustomInput] = useState('');
+  const [receivedOutput, setReceivedOutput] = useState('');
+  const [isLoading1, setIsLoading1] = useState(false);
+  const [isLoading2, setIsLoading2] = useState(false);
+
+  const defaultCodes = {
+    cpp: `#include <bits/stdc++.h>\nusing namespace std;\nint main() {\n    cout << "Hello, World!";\n    return 0;\n}`,
+    java: `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}`,
+    c: `#include <stdio.h>\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}`,
+    python: `print("Hello, World!")`,
+  };
 
   useEffect(() => {
     const fetchProblem = async () => {
@@ -27,13 +41,16 @@ const ProblemPage = () => {
       }
     };
 
+    setCode(defaultCodes[language]);
     fetchProblem();
-  }, [pid]);
+  }, [pid, language]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setReceivedOutput(false);
 
     try {
+      setIsLoading1(true);
       const token = localStorage.getItem('token');
       const response = await axios.post(
         'http://localhost:3001/ProblemSubmission',
@@ -41,6 +58,7 @@ const ProblemPage = () => {
           title: problem.title,
           code,
           language,
+          difficulty: problem.difficulty,
         },
         {
           headers: {
@@ -51,14 +69,40 @@ const ProblemPage = () => {
 
       console.log('Problem solution submitted:', response.data.submission);
       setSubmission(response.data.submission);
-      setShowModal(true); // Show the modal when submission is received
+      if (response.data.output) {
+        setReceivedOutput(response.data.output);
+      } else {
+        setShowModal(true);
+      }
     } catch (error) {
       console.error('Error submitting problem solution:', error);
+      toast.error('Failed to Submit code. Please try again.');
+    } finally {
+      setIsLoading1(false);
     }
   };
 
   const handleLanguageChange = (event) => {
-    setLanguage(event.target.value);
+    const selectedLanguage = event.target.value;
+    setLanguage(selectedLanguage);
+
+    switch (selectedLanguage) {
+      case 'cpp':
+        setCode(defaultCodes.cpp);
+        break;
+      case 'java':
+        setCode(defaultCodes.java);
+        break;
+      case 'c':
+        setCode(defaultCodes.c);
+        break;
+      case 'python':
+        setCode(defaultCodes.python);
+        break;
+      default:
+        setCode('');
+        break;
+    }
   };
 
   const closeModal = () => {
@@ -81,11 +125,10 @@ const ProblemPage = () => {
           },
         }
       );
-      console.log('t1');
-      console.log(response.data);
+
       const userEmail = response.data;
       if (userEmail == null) {
-        toast.error('Please log in to view your submissions.'); // Display error notification
+        toast.error('Please log in to view your submissions.');
       } else {
         navigate(
           `/submissions?problemTitle=${encodeURIComponent(
@@ -95,10 +138,32 @@ const ProblemPage = () => {
       }
     } catch (error) {
       if (error.response && error.response.status === 403) {
-        toast.error('Please log in to view your submissions.'); // Display error notification
+        toast.error('Please log in to view your submissions.');
       } else {
         console.error('Error retrieving user email:', error);
       }
+    }
+  };
+
+  const handleRunCode = async () => {
+    setSubmission(false);
+    try {
+      setIsLoading2(true);
+      const response = await axios.post(
+        'http://localhost:3001/RunCode',
+        {
+          code,
+          input: customInput,
+          language,
+        }
+      );
+
+      setReceivedOutput(response.data.output);
+    } catch (error) {
+      console.error('Error running code:', error);
+      toast.error('Failed to run code. Please try again.');
+    } finally {
+      setIsLoading2(false);
     }
   };
 
@@ -118,18 +183,19 @@ const ProblemPage = () => {
             <Card.Title>Example Output:</Card.Title>
             <Card.Text><pre>{problem.testCases[0].expectedOutput}</pre></Card.Text>
             <form onSubmit={handleSubmit}>
-              <div className="form-group" controlId="inputArray">
-                <label>Input Array:</label>
-                <input className="form-control" type="text" />
-              </div>
-              <div className="form-group" controlId="target">
-                <label>Target:</label>
-                <input className="form-control" type="text" />
+              <div className="form-group" controlId="customInput">
+                <label>Custom Input:</label>
+                <input
+                  className="form-control"
+                  type="text"
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                />
               </div>
               <div className="form-group" controlId="code">
                 <label>Code:</label>
                 <AceEditor
-                  mode="c_cpp"
+                  mode={language === 'java' ? 'java' : language === 'python' ? 'python' : 'c_cpp'}
                   theme="monokai"
                   value={code}
                   onChange={(value) => setCode(value)}
@@ -147,13 +213,15 @@ const ProblemPage = () => {
                 >
                   <option value="cpp">C++</option>
                   <option value="java">Java</option>
+                  <option value="c">C</option>
+                  <option value="python">Python</option>
                 </select>
               </div>
-              <Button variant="primary" type="submit">
-                Submit
+              <Button variant="primary" type="submit" disabled={isLoading1}>
+                {isLoading1 ? 'Submitting...' : 'Submit'}
               </Button>
-              <Button variant="secondary" type="button">
-                Run
+              <Button variant="secondary" type="button" onClick={handleRunCode} disabled={isLoading2}>
+                {isLoading2 ? 'Running...' : 'Run'}
               </Button>
             </form>
           </Card.Body>
@@ -205,7 +273,12 @@ const ProblemPage = () => {
         </div>
       )}
 
-      <ToastContainer /> {/* Notification container */}
+      <div>
+        <h3>Received Output:</h3>
+        <pre>{receivedOutput}</pre>
+      </div>
+
+      <ToastContainer />
     </div>
   );
 };

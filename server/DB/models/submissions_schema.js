@@ -37,6 +37,11 @@ const submissionSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    difficulty: {
+        type: String,
+        enum: ['easy', 'medium', 'hard'],
+        required: true,
+    },
     dateTime: {
         type: Date,
         required: true

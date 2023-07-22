@@ -23,7 +23,7 @@ const executeCpp = (filepath, input) => {
           reject(error);
         } else {
           exec(
-            `g++ ${filepath} -o ${outPath} && cd ${outputPath} && .\\${jobId}.exe < ${inputPath}`, // Use input file
+            `g++ ${filepath} -o ${outPath} && cd ${outputPath} && ./${jobId}.exe < ${inputPath}`, // Use input file
             (error, stdout, stderr) => {
                 fs.unlink(outPath, () => {}); // Remove the EXE file
                 fs.unlink(inputPath, () => {});
