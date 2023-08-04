@@ -5,6 +5,7 @@ client/node_modules/
 /.pnp
 .pnp.js
 server/node_modules/
+keys/onlinejudge.pem
 # testing
 /coverage
 
